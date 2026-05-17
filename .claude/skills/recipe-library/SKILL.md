@@ -5,7 +5,7 @@ description: レシピマスタの登録・検索（/chef study, /chef menu）�
 
 # recipe-library
 
-`recipes` テーブルへの追加・参照を行う。`scripts/recipe.py` を介して SQLite に書き込む。
+`recipes` テーブルへの追加・参照を行う。`scripts/recipe.rb` を介して SQLite に書き込む。
 
 ## `/chef study [URL]`
 

@@ -5,7 +5,7 @@ argument-hint: <onboard|brief|study|menu|log|plan|buy> [args...]
 
 # /chef — 我が家のシェフ
 
-`docs/spec/spec.md` の仕様に従って動作する。SQLite (`data/chef.db`) をデータストアとして、Python スクリプト (`scripts/*.py`) を介して操作する。
+`docs/spec/spec.md` の仕様に従って動作する。SQLite (`data/chef.db`) をデータストアとして、Ruby スクリプト (`scripts/*.rb`) を介して操作する。
 
 ## サブコマンドのルーティング
 
