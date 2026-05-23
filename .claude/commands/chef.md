@@ -20,6 +20,7 @@ argument-hint: <onboard|brief|study|menu|log|plan|buy> [args...]
 | `log <料理名> [--date YYYY-MM-DD]` | skill: `meal-logging` |
 | `plan` / `plan apply` | skill: `meal-planning` |
 | `buy` | skill: `shopping-list` |
+| `calendar connect` | このコマンド内で完結（下記） |
 | `shop *` | v1スコープ外（「ネットスーパー連携は未実装」と返す） |
 
 世界観: 「我が家のシェフ」というキャラクター。応答はフレンドリーで、コマンド名は世界観に揃える（init ではなく onboard、config ではなく brief）。
@@ -33,6 +34,21 @@ argument-hint: <onboard|brief|study|menu|log|plan|buy> [args...]
 1. `ruby scripts/chef_db.rb` を実行して DB とスキーマを初期化
 2. 既存DBがあった場合はその旨を伝え、新規作成だった場合は brief への誘導メッセージを返す
 3. 新規時は `ruby scripts/brief.rb show` を実行して現在の household 雛形を表示し、「`/chef brief` で家族構成・アレルギー・曜日ルールを書き込んでね」と案内
+4. Googleカレンダー連携の確認（新規DB時のみ実施。既存DBの onboard 再実行時はスキップ）:
+   - 「`/chef plan apply` で来週の献立をGoogleカレンダーに登録できるよ。今連携する？（後で `/chef calendar connect` でもOK）」と聞く
+   - ユーザーが YES → `calendar connect` と同じフロー（下記）を実行
+   - ユーザーが NO/後で → スキップして「いつでも `/chef calendar connect` で繋げられるよ」と案内
+
+### `calendar connect`
+
+Googleカレンダーとの OAuth 連携を行う。
+
+1. `mcp__claude_ai_Google_Calendar__authenticate` を呼び出す
+2. 返ってきた認証URLをユーザーに渡し、ブラウザで承認してもらう旨を案内
+3. ブラウザのリダイレクト先（`http://localhost:<port>/callback?code=...&state=...`）のURLを貼ってもらう
+4. `mcp__claude_ai_Google_Calendar__complete_authentication` に `callback_url` として渡す
+5. 成功したら「カレンダー連携できたよ！`/chef plan apply` でカレンダー登録が動くようになったよ」と返す
+6. 既に認証済（イベント作成系のツールが利用可能）なら、その旨を伝えてスキップ
 
 ### `brief`
 
