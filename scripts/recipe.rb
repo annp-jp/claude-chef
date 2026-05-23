@@ -4,7 +4,7 @@ require 'json'
 require 'optparse'
 require_relative 'chef_db'
 
-COLS = %w[name type meal_type ingredients instructions url kids_ok allergens cook_time_min note].freeze
+COLS = %w[name course type meal_type ingredients instructions url kids_ok allergens cook_time_min note].freeze
 JSON_COLS = %w[type ingredients allergens].freeze
 
 def encode_payload(payload)
@@ -37,6 +37,7 @@ def cmd_add(args)
   abort 'ERROR: name is required' if payload['name'].to_s.empty?
 
   payload['meal_type'] ||= 'dinner'
+  payload['course'] ||= 'meal'
   payload['kids_ok'] = true if payload['kids_ok'].nil?
   values = encode_payload(payload)
   ChefDB.open do |db|

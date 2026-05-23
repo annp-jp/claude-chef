@@ -12,6 +12,7 @@ module ChefDB
     CREATE TABLE IF NOT EXISTS recipes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
+        course TEXT DEFAULT 'meal',
         type TEXT,
         meal_type TEXT DEFAULT 'dinner',
         ingredients TEXT,
@@ -86,6 +87,7 @@ module ChefDB
     db = connect
     begin
       db.execute_batch(SCHEMA)
+      migrate!(db)
       if fresh
         BRIEF_DEFAULTS.each do |k, v|
           db.execute('INSERT OR IGNORE INTO household(key,value) VALUES(?,?)', [k, v])
@@ -95,6 +97,12 @@ module ChefDB
       db.close
     end
     fresh
+  end
+
+  # 既存DB向けの追加カラムを冪等に投入する。
+  def migrate!(db)
+    cols = db.execute("PRAGMA table_info(recipes)").map { |r| r['name'] }
+    db.execute("ALTER TABLE recipes ADD COLUMN course TEXT DEFAULT 'meal'") unless cols.include?('course')
   end
 
   # ブロックに接続を渡して必ずクローズする。

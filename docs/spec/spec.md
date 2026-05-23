@@ -101,7 +101,8 @@ LIFEネットスーパーを当面の対象とする。`shop` という汎用名
 |---|---|---|
 | id | INTEGER PK | |
 | name | TEXT NOT NULL | 料理名 |
-| type | TEXT | 主菜 / 副菜 / 汁物（複数可、JSON配列） |
+| course | TEXT | `meal`（食事）/ `dessert`（デザート）など。デフォルト `meal`。`plan` は `meal` のみ献立候補にする |
+| type | TEXT | 主菜 / 副菜 / 汁物（複数可、JSON配列）。`course='dessert'` のときは空配列可 |
 | meal_type | TEXT | dinner / lunch / morning（v1は dinner固定） |
 | ingredients | TEXT | 材料（JSON配列、各要素 `{name, amount, category}`） |
 | instructions | TEXT | 手順（任意） |

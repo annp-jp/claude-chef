@@ -16,10 +16,11 @@ description: レシピマスタの登録・検索（/chef study, /chef menu）�
 1. WebFetch で URL からページ本文を取得
 2. ページから以下を抽出する:
    - `name`: 料理名
+   - `course`: `meal`（食事）/ `dessert`（デザート）。スイーツ・お菓子系URLなら `dessert`、それ以外は `meal`。デフォルト `meal`
    - `ingredients`: 材料一覧。各要素は `{"name": "鶏もも肉", "amount": "300g", "category": "肉魚"}` の形。category は `肉魚 / 野菜 / 調味料 / その他` のいずれかに振り分ける（買い物リスト集約のキー）
    - `instructions`: 手順（簡潔に。任意）
    - `cook_time_min`: 調理時間目安（分）。書かれていなければ推定
-   - `type`: `["主菜"]` / `["副菜"]` / `["汁物"]` のJSON配列（複数可）
+   - `type`: `["主菜"]` / `["副菜"]` / `["汁物"]` のJSON配列（複数可）。`course='dessert'` のときは `[]` でよい
    - `allergens`: 含むアレルゲン（卵・乳・小麦など）。JSON配列
    - `kids_ok`: 子供向けか（辛さ・硬さ等で判断）
 3. 抽出結果をユーザーに見せて確認を取る（誤りがあれば修正）
@@ -28,7 +29,7 @@ description: レシピマスタの登録・検索（/chef study, /chef menu）�
 
 ### URL 省略時
 
-対話で項目を順に埋める: 料理名 → 種別（主菜/副菜/汁物）→ 材料（複数行で受ける）→ 調理時間 → 子供OKか → アレルゲン → メモ。
+対話で項目を順に埋める: 料理名 → course（meal/dessert、デフォルト meal）→ 種別（主菜/副菜/汁物。dessert なら省略可）→ 材料（複数行で受ける）→ 調理時間 → 子供OKか → アレルゲン → メモ。
 
 材料は `name`, `amount`, `category` を確認しつつ JSON 化する。`category` が曖昧な場合は名称から推定して提示し、ユーザーに確認。
 
