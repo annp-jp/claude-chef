@@ -71,7 +71,7 @@ draft を確定する。**副作用を伴う不可逆操作**なので、実行�
 1. `ruby scripts/meal_plan.rb show` で対象 draft を表示
 2. 内容（week_start と日別献立）を読み上げて「これでカレンダー登録して meal_log にも記録するけどOK?」と最終確認
 3. ユーザーが OK したら以下を順に実行:
-   - **Googleカレンダー登録**: `mcp__claude_ai_Google_Calendar__*` 系ツールが利用可能なら、各日付の dinner として「料理名」をイベント登録（時刻は19:00デフォルト、ユーザー希望があれば調整）。MCPが未認証ならその旨を伝え、認証後に再実行するよう案内
+   - **Googleカレンダー登録**: `mcp__claude_ai_Google_Calendar__*` 系ツールが利用可能なら、各日付の献立を「終日予定（all-day event）」として登録する。時刻指定はせず、`start`/`end` を日付（`YYYY-MM-DD`）で渡して終日扱いにすること。登録先カレンダーは `ktmt.ryo@gmail.com`。イベント名はその日の料理名（複数なら「主菜 + 副菜 + 汁物」のように連結）。MCPが未認証ならその旨を伝え、認証後に再実行するよう案内
    - **DB確定**: `ruby scripts/meal_plan.rb apply --week-start <YYYY-MM-DD>`
      - 自動で meal_plans を applied に昇格し、各日を meal_log に記録する
 4. 結果をユーザーに報告（カレンダー登録件数、meal_log 記録件数）
