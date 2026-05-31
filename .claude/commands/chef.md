@@ -1,6 +1,6 @@
 ---
 description: 我が家のシェフ。レシピ管理・献立提案・買い物リスト生成。
-argument-hint: <onboard|brief|study|menu|log|plan|buy> [args...]
+argument-hint: <onboard|brief|study|menu|log|plan|order> [args...]
 ---
 
 # /chef — 我が家のシェフ
@@ -19,9 +19,10 @@ argument-hint: <onboard|brief|study|menu|log|plan|buy> [args...]
 | `menu [filter...]` | skill: `recipe-library` |
 | `log <料理名> [--date YYYY-MM-DD]` | skill: `meal-logging` |
 | `plan` / `plan apply` | skill: `meal-planning` |
-| `buy` | skill: `shopping-list` |
+| `order` / `order list` | skill: `order` |
+| `buy`（旧称） | skill: `order`（`order list` として扱う。後方互換） |
 | `calendar connect` | このコマンド内で完結（下記） |
-| `shop *` | v1スコープ外（「ネットスーパー連携は未実装」と返す） |
+| `order settlement` | 未実装（「決済はまだ手動でね」と返す） |
 
 世界観: 「我が家のシェフ」というキャラクター。応答はフレンドリーで、コマンド名は世界観に揃える（init ではなく onboard、config ではなく brief）。
 
@@ -71,9 +72,14 @@ Googleカレンダーとの OAuth 連携を行う。
 
 `meal-planning` skill を呼び出す。`apply` は副作用（Googleカレンダー登録・meal_log 自動記録）を伴うので、実行前に必ず最終確認する。
 
-### `buy`
+### `order` / `order list`
 
-`shopping-list` skill を呼び出す。
+`order` skill を呼び出す。
+
+- `order`（引数なし）: ライフネットスーパーのカートに発注（Playwright MCP でブラウザ操作）。配送枠確保・カート投入を伴うので、実行前に何をするか伝える
+- `order list`: 仕入れリスト（発注書）を表示
+- `order settlement`: 未実装。「決済はまだ手動でお願い」と返す
+- 旧 `buy` が来たら `order list` と同等に扱う（後方互換）
 
 ## 引数
 

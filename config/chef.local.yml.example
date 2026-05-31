@@ -1,0 +1,14 @@
+# chef のローカル設定（環境別の値）。
+# このファイルをコピーして config/chef.local.yml を作り、自分の値を埋める。
+#   cp config/chef.local.yml.example config/chef.local.yml
+# config/chef.local.yml は .gitignore 済み（commit されない）。
+
+# Googleカレンダーの登録先カレンダーID。未設定なら primary 扱い。
+calendar_id: "your-id@gmail.com"
+
+# ライフネットスーパーのログイン情報の参照（1Password）。
+# 実値（パスワード）は 1Password にのみ存在。ここには参照だけ書く。
+#   op item list で item を探し、op://<vault>/<item-id> を埋める。
+#   その item に username / password フィールドがある前提。
+life_netsuper:
+  op_item: "op://<vault>/<item-id>"

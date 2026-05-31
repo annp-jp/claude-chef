@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# 買い物リスト生成。/chef buy のバックエンド。
+# 仕入れリスト生成。/chef order list / /chef order のバックエンド。
 # 確定献立(meal_plans status=applied) の recipe_ids から ingredients を集計し、
 # category 別に整形して出力する。
 require 'json'
@@ -8,6 +8,8 @@ require_relative 'chef_db'
 
 CATEGORY_ORDER = %w[肉魚 野菜 調味料 その他].freeze
 DEFAULT_CATEGORY = 'その他'
+# カート自動投入の対象外にするカテゴリ（家に常備しがち。在庫確認に回す）。
+PANTRY_CATEGORIES = %w[調味料].freeze
 
 HEURISTICS = [
   ['肉魚', /肉|鶏|豚|牛|挽肉|鮭|鯖|鱈|まぐろ|鰤|海老|エビ|イカ|タコ|あさり|貝|魚/],
@@ -81,7 +83,9 @@ def cmd_build(args)
         next
       end
     end
-    puts JSON.pretty_generate({ week_start: ws, categories: aggregate(ingredients_lists) })
+    cats = aggregate(ingredients_lists)
+    pantry = PANTRY_CATEGORIES.select { |c| cats.key?(c) }
+    puts JSON.pretty_generate({ week_start: ws, categories: cats, pantry_categories: pantry })
   end
 end
 

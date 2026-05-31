@@ -73,23 +73,20 @@
 
 `plan apply` で予定登録した献立は自動的に `meal_log` に記録される想定だが、実際の調理が予定と異なった場合のために手動補正用のコマンドとして用意。
 
-### 買い物
+### 発注（order）
 
 ```
-/chef buy                      # 直近の確定献立から買い物リスト生成
+/chef order list               # 直近の確定献立から仕入れリスト生成
+/chef order                    # ライフネットスーパーのカートに自動発注
+/chef order settlement         # 決済（未実装）
 ```
 
-カテゴリ別（肉魚 / 野菜 / 調味料 / その他）に整形して出力。
+レストランの Chef が仕入れ業者に「発注」する世界観で `order` ドメインに統合。
+詳細は [`docs/spec/order/v0.2.md`](order/v0.2.md) を参照。
 
-### ネットスーパー連携（段階的）
-
-```
-/chef shop sale                # 特売閲覧（フェーズ4）
-/chef shop login               # ログイン（フェーズ5）
-/chef shop cart                # カート投入（フェーズ5）
-```
-
-LIFEネットスーパーを当面の対象とする。`shop` という汎用名にしておくことで、将来他のスーパーに切り替わっても意味が崩れない。
+- `order list`: カテゴリ別（肉魚 / 野菜 / 調味料 / その他）に整形して出力（旧 `/chef buy`）
+- `order`: Playwright MCP でライフを操作し、仕入れリストの商品をカートに投入（調味料は在庫確認に回す。数量は1固定）。配送枠確保まで行い、決済はしない
+- `order settlement`: 決済は将来スコープ（未実装）
 
 ## データモデル
 
@@ -207,11 +204,11 @@ Chef:   火曜を変更。肉じゃが（45分）→ 鶏ももの照り焼き（
 Chef:   Googleカレンダーに5件登録、meal_plansに保存しました。
 ```
 
-### 平日: 買い物リスト生成
+### 平日: 仕入れリスト生成
 
 ```
-リョウ: /chef buy
-Chef:   今週の確定献立から買い物リスト:
+リョウ: /chef order list
+Chef:   今週の確定献立から仕入れリスト:
 
         【肉魚】
         - 鮭の切り身 4切れ
@@ -280,7 +277,7 @@ Chef:   2026-05-18 dinner: 肉じゃが を記録しました。
 - `recipe-library`: レシピマスタ管理（`study`, `menu`）
 - `meal-logging`: 調理記録（`log`）
 - `meal-planning`: 献立生成（`plan`, `plan apply`）
-- `shopping-list`: 買い物リスト生成（`buy`）
+- `order`: 仕入れリスト生成（`order list`）・ネットスーパー発注（`order`）
 - `super-deals`: ネットスーパー連携（`shop *`）
 
 各スキルは独立して呼び出し可能。`meal-planning` は他スキルを内部的に参照する（recipes、meal-log、household、allergies、rules）。
