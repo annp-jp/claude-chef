@@ -45,9 +45,21 @@ Claude Code をこのディレクトリで起動すると、`.claude/commands/ch
 | `/chef log <料理名> [--date YYYY-MM-DD]` | 「今日これ作った」を記録 |
 | `/chef plan` | 来週の献立提案（対話で調整） |
 | `/chef plan apply` | 確定 → Googleカレンダー登録 + meal_log 記録 |
-| `/chef buy` | 直近の確定献立から買い物リスト生成 |
+| `/chef order list` | 直近の確定献立から仕入れリスト生成（旧 `/chef buy`） |
+| `/chef order` | ライフネットスーパーのカートに自動発注（Playwright MCP） |
 
-ネットスーパー連携（`/chef shop *`）は未実装。
+`/chef order` は決済しない（カート投入＋配送枠確保まで）。`/chef order settlement`（決済）は未実装。
+
+### ローカル設定
+
+環境別の値は `config/chef.local.yml`（gitignore）に置く。雛形をコピーして自分の値を埋める:
+
+```sh
+cp config/chef.local.yml.example config/chef.local.yml
+```
+
+- `calendar_id`: Googleカレンダーの登録先
+- `life_netsuper.op_item`: ライフのログイン情報の 1Password 参照（`op://vault/item-id`）
 
 ## 構成
 
@@ -58,14 +70,16 @@ Claude Code をこのディレクトリで起動すると、`.claude/commands/ch
     recipe-library/         # study, menu
     meal-logging/           # log
     meal-planning/          # plan, plan apply
-    shopping-list/          # buy
+    order/                  # order, order list（ネットスーパー発注）
 scripts/                    # Ruby + sqlite3。各 skill から呼ばれる
   chef_db.rb                # スキーマ・接続
+  config.rb                 # ローカル設定（config/chef.local.yml）読み込み
   brief.rb                  # household/allergies/rules
   recipe.rb                 # recipes CRUD
   meal_log.rb               # meal_log
   meal_plan.rb              # meal_plans（候補抽出・draft・apply）
-  shopping.rb               # 買い物リスト集約
+  shopping.rb               # 仕入れリスト集約
+config/chef.local.yml       # 環境別設定（gitignore）
 data/chef.db                # SQLite 本体（gitignore）
 docs/spec/spec.md           # 仕様書
 ```
@@ -90,9 +104,9 @@ skill ごとにファイルを分離してあるので、Claude Code は呼び�
 
 - **フェーズ1**: データ基盤（onboard, brief, study, menu, log）← 実装済
 - **フェーズ2**: 献立生成（plan, plan apply）← 実装済
-- **フェーズ3**: 買い物リスト（buy）← 実装済
-- **フェーズ4**: 特売情報（shop sale）← 未着手
-- **フェーズ5**: カート自動投入（shop login, shop cart）← 未着手
+- **フェーズ3**: 仕入れリスト（order list、旧 buy）← 実装済
+- **フェーズ4**: カート自動投入（order）← 実装済
+- **フェーズ5**: 決済（order settlement）← 未着手
 
 ## ライセンス
 

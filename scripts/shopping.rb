@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# 買い物リスト生成。/chef buy のバックエンド。
+# 仕入れリスト生成。/chef order list / /chef order のバックエンド。
 # 確定献立(meal_plans status=applied) の recipe_ids から ingredients を集計し、
 # category 別に整形して出力する。
 require 'json'
@@ -8,6 +8,8 @@ require_relative 'chef_db'
 
 CATEGORY_ORDER = %w[肉魚 野菜 調味料 その他].freeze
 DEFAULT_CATEGORY = 'その他'
+# カート自動投入の対象外にするカテゴリ（家に常備しがち。在庫確認に回す）。
+PANTRY_CATEGORIES = %w[調味料].freeze
 
 HEURISTICS = [
   ['肉魚', /肉|鶏|豚|牛|挽肉|鮭|鯖|鱈|まぐろ|鰤|海老|エビ|イカ|タコ|あさり|貝|魚/],
@@ -21,26 +23,31 @@ def guess_category(name)
   DEFAULT_CATEGORY
 end
 
-def aggregate(ingredients_lists)
-  bucket = Hash.new { |h, k| h[k] = Hash.new { |hh, kk| hh[kk] = [] } }
-  ingredients_lists.each do |ings|
-    ings.each do |ing|
+# recipes: [{ 'name' => 料理名, 'ingredients' => [{name, amount, category}, ...] }, ...]
+# 各材料を category 別に集約し、amount と「使用料理(dishes)」を併せて返す。
+# dishes は order の商品選択時の判断ヒント（例: 肉団子はスープ用なら味なしを選ぶ 等）。
+def aggregate(recipes)
+  bucket = Hash.new { |h, k| h[k] = {} }
+  recipes.each do |recipe|
+    dish = recipe['name'].to_s.strip
+    (recipe['ingredients'] || []).each do |ing|
       next unless ing.is_a?(Hash)
 
       name = ing['name'].to_s.strip
       next if name.empty?
 
       cat = ing['category'] || guess_category(name)
-      amount = ing['amount'].to_s
-      bucket[cat][name] << amount
+      entry = (bucket[cat][name] ||= { amounts: [], dishes: [] })
+      entry[:amounts] << ing['amount'].to_s
+      entry[:dishes] << dish unless dish.empty? || entry[:dishes].include?(dish)
     end
   end
   out = {}
   cats = CATEGORY_ORDER.select { |c| bucket.key?(c) } + bucket.keys.reject { |c| CATEGORY_ORDER.include?(c) }
   cats.each do |cat|
-    items = bucket[cat].sort.map do |name, amounts|
-      amt = amounts.reject(&:empty?).join(' + ')
-      { 'name' => name, 'amount' => amt }
+    items = bucket[cat].sort.map do |name, entry|
+      amt = entry[:amounts].reject(&:empty?).join(' + ')
+      { 'name' => name, 'amount' => amt, 'dishes' => entry[:dishes] }
     end
     out[cat] = items
   end
@@ -69,19 +76,21 @@ def cmd_build(args)
     end
     plan = JSON.parse(plan_row['plan_json'])
     rids = (plan['days'] || []).flat_map { |d| (d['recipe_ids'] || []).map(&:to_i) }
-    ingredients_lists = []
+    recipes = []
     rids.each do |rid|
-      r = db.execute('SELECT ingredients FROM recipes WHERE id=?', [rid]).first
+      r = db.execute('SELECT name, ingredients FROM recipes WHERE id=?', [rid]).first
       next unless r && r['ingredients']
 
       begin
         ings = JSON.parse(r['ingredients'])
-        ingredients_lists << ings if ings.is_a?(Array)
+        recipes << { 'name' => r['name'], 'ingredients' => ings } if ings.is_a?(Array)
       rescue JSON::ParserError
         next
       end
     end
-    puts JSON.pretty_generate({ week_start: ws, categories: aggregate(ingredients_lists) })
+    cats = aggregate(recipes)
+    pantry = PANTRY_CATEGORIES.select { |c| cats.key?(c) }
+    puts JSON.pretty_generate({ week_start: ws, categories: cats, pantry_categories: pantry })
   end
 end
 
