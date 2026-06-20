@@ -137,13 +137,29 @@ def cmd_show(args)
 end
 
 def cmd_apply(args)
-  # draft を applied に昇格し、meal_log に各日の献立を自動記録する。
+  # plan を applied に昇格し、meal_log に各日の献立を自動記録する。
+  # 主経路: --json で献立を直接渡す（draft 保存不要。なければ applied 行を新規作成）。
+  # 副経路: --json なしなら既存 draft を week_start で引いて確定する。
   # Googleカレンダー登録は別途 Claude 側で MCP 経由で行う想定。
   ChefDB.init!
+  raw = args[:json] || (args[:read_stdin] ? $stdin.read : nil)
   ChefDB.open do |db|
+    if raw && !raw.strip.empty?
+      payload = JSON.parse(raw)
+      ws = payload['week_start']
+      abort 'ERROR: week_start required in plan json' if ws.to_s.empty?
+      args[:week_start] = ws
+      existing = db.execute('SELECT id FROM meal_plans WHERE week_start=?', [ws]).first
+      if existing
+        db.execute('UPDATE meal_plans SET plan_json=? WHERE id=?', [JSON.generate(payload), existing['id']])
+      else
+        db.execute('INSERT INTO meal_plans(week_start,status,plan_json) VALUES(?,?,?)',
+                   [ws, 'draft', JSON.generate(payload)])
+      end
+    end
     row = db.execute('SELECT * FROM meal_plans WHERE week_start=?', [args[:week_start]]).first
     unless row
-      warn JSON.generate({ error: 'draft not found' })
+      warn JSON.generate({ error: 'plan not found（--json で献立を渡すか、先に save-draft してね）' })
       exit 1
     end
     plan = JSON.parse(row['plan_json'])
@@ -192,8 +208,12 @@ def main
     cmd_show(opts)
   when 'apply'
     parser.on('--week-start STR') { |v| opts[:week_start] = v }
+    parser.on('--json STR') { |v| opts[:json] = v }
+    parser.on('--stdin') { opts[:read_stdin] = true }
     parser.parse!(ARGV)
-    abort '--week-start required' unless opts[:week_start]
+    unless opts[:week_start] || opts[:json] || opts[:read_stdin]
+      abort '--week-start または --json が必要だよ'
+    end
 
     cmd_apply(opts)
   else
