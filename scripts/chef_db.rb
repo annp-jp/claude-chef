@@ -48,6 +48,21 @@ module ChefDB
         value TEXT
     );
 
+    -- 定番商品カタログ: 我が家の定番材料 ⇔ ライフネットスーパーの実商品の紐づけ。
+    -- order のカート投入で検索をスキップする「ヒント」。保証ではない（URLが死んだら検索へ）。
+    CREATE TABLE IF NOT EXISTS store_products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        aliases TEXT,
+        product_name TEXT,
+        product_id TEXT,
+        url TEXT,
+        category TEXT,
+        note TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS allergies (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         food TEXT NOT NULL,
