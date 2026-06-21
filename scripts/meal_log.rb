@@ -26,7 +26,7 @@ def cmd_add(args, recipes)
   ChefDB.open do |db|
     ids, unresolved = resolve_recipe_ids(db, recipes)
     if !unresolved.empty? && !args[:allow_unknown]
-      warn JSON.generate({ error: '未登録レシピあり。先に /chef study で登録するか --allow-unknown を渡す',
+      warn JSON.generate({ error: '未登録レシピあり。先に /chef note で登録するか --allow-unknown を渡す',
                            unresolved: unresolved })
       exit 2
     end

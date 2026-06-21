@@ -40,7 +40,9 @@ Claude Code をこのディレクトリで起動すると、`.claude/commands/ch
 |---|---|
 | `/chef onboard` | DB 初期化 |
 | `/chef brief` | 家族・アレルギー・曜日ルールの閲覧／編集 |
-| `/chef study [URL]` | レシピを登録（URL から抽出 or 対話） |
+| `/chef note [URL]` | レシピを登録（URL から抽出 or 対話） |
+| `/chef note <名前> <ライフ商品URL>` | 定番商品を登録（材料⇔ライフ実商品の紐づけ） |
+| `/chef note catalog` | 定番商品の一覧・削除 |
 | `/chef menu [filter]` | レシピ一覧・検索 |
 | `/chef log <料理名> [--date YYYY-MM-DD]` | 「今日これ作った」を記録 |
 | `/chef plan` | 来週の献立提案（対話で調整） |
@@ -67,7 +69,7 @@ cp config/chef.local.yml.example config/chef.local.yml
 .claude/
   commands/chef.md          # /chef スラッシュコマンド（ルーター）
   skills/
-    recipe-library/         # study, menu
+    note/                   # note（レシピ＋定番商品の記録）, menu
     meal-logging/           # log
     meal-planning/          # plan, plan apply
     order/                  # order, order list（ネットスーパー発注）
@@ -102,7 +104,7 @@ skill ごとにファイルを分離してあるので、Claude Code は呼び�
 
 ## 開発フェーズ
 
-- **フェーズ1**: データ基盤（onboard, brief, study, menu, log）← 実装済
+- **フェーズ1**: データ基盤（onboard, brief, note, menu, log）← 実装済
 - **フェーズ2**: 献立生成（plan, plan apply）← 実装済
 - **フェーズ3**: 仕入れリスト（order list、旧 buy）← 実装済
 - **フェーズ4**: カート自動投入（order）← 実装済

@@ -13,7 +13,7 @@ description: 「今日これ作った」を記録する（/chef log）。料理�
 2. `ruby scripts/meal_log.rb add <料理名1> [料理名2 ...] [--date YYYY-MM-DD]` を実行
    - `--date` 省略時は今日
 3. 結果 JSON を確認
-   - `unresolved` が空でなければ、そのレシピが未登録。ユーザーに `/chef study` での登録を促す
+   - `unresolved` が空でなければ、そのレシピが未登録。ユーザーに `/chef note` での登録を促す
    - 一部解決できた場合は、未解決分だけ別途登録するか、`--allow-unknown` で名前メモ付きで記録するかを確認
 4. 記録できたら「YYYY-MM-DD dinner: <料理名> を記録したよ」とフレンドリーに返す
 

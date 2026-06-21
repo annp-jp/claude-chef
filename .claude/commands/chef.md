@@ -1,6 +1,6 @@
 ---
 description: 我が家のシェフ。レシピ管理・献立提案・買い物リスト生成。
-argument-hint: <onboard|brief|study|menu|log|plan|order> [args...]
+argument-hint: <onboard|brief|note|menu|log|plan|order> [args...]
 ---
 
 # /chef — 我が家のシェフ
@@ -15,8 +15,8 @@ argument-hint: <onboard|brief|study|menu|log|plan|order> [args...]
 |---|---|
 | `onboard` | このコマンド内で完結（下記） |
 | `brief` | このコマンド内で完結（下記） |
-| `study [URL]` | skill: `recipe-library` |
-| `menu [filter...]` | skill: `recipe-library` |
+| `note [URL]` / `note <名前> <ライフ商品URL>` / `note catalog [...]` | skill: `note` |
+| `menu [filter...]` | skill: `note` |
 | `log <料理名> [--date YYYY-MM-DD]` | skill: `meal-logging` |
 | `plan` / `plan apply` | skill: `meal-planning` |
 | `order` / `order list` | skill: `order` |
@@ -60,9 +60,13 @@ Googleカレンダーとの OAuth 連携を行う。
 - アレルギーは `severity` を必ず確認（「アレルギー」=ハードフィルタ / 「苦手」=ソフトフィルタ）
 - 削除は `allergy-remove <id>` / `rule-remove <id>` を使う。先に `show` で id を確認
 
-### `study` / `menu`
+### `note` / `menu`
 
-`recipe-library` skill を呼び出す。URL があれば WebFetch、なければ対話で材料を埋める。
+`note` skill を呼び出す。`note` はレシピと定番商品の両方を記録する入口:
+- `note <レシピURL>` / `note`（引数なし）: レシピ登録（URLなら WebFetch、なければ対話）
+- `note <名前> <ライフ商品URL>`（`life-netsuper.jp/product_detail/...`）: 定番商品の紐づけを登録
+- `note catalog [...]`: 定番商品の一覧・削除
+- 旧 `study` は廃止。打たれたら `note` を案内する
 
 ### `log`
 

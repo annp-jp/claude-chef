@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# Recipe master CRUD. /chef study, /chef menu のバックエンド。
+# Recipe master CRUD. /chef note, /chef menu のバックエンド。
 require 'json'
 require 'optparse'
 require_relative 'chef_db'

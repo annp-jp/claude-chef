@@ -24,7 +24,7 @@ description: 来週の献立を提案・確定する（/chef plan, /chef plan ap
    - **苦手食材はできるだけ回避**
    - **`weekly_pattern_hint`** を反映（金曜は凝ったもの可、平日は時短など）
    - 各日に主菜＋副菜（必要なら汁物）の組み合わせを選ぶ
-3. 候補が薄い場合（レシピ数不足）はその旨を率直に伝え、`/chef study` で追加するか提案する
+3. 候補が薄い場合（レシピ数不足）はその旨を率直に伝え、`/chef note` で追加するか提案する
 4. ユーザーに提示し、要望（自然言語）を受けて対話的に修正
 
 ### 提示フォーマット例
@@ -59,7 +59,7 @@ description: 来週の献立を提案・確定する（/chef plan, /chef plan ap
 }
 ```
 
-`recipe_ids` は `context` の `candidates` から拾った id を使う（ユーザーが新規レシピを指定した場合は先に `/chef study` で登録）。
+`recipe_ids` は `context` の `candidates` から拾った id を使う（ユーザーが新規レシピを指定した場合は先に `/chef note` で登録）。
 
 ### 副経路: draft 保存（任意）
 
