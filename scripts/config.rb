@@ -36,6 +36,15 @@ module ChefConfig
   def typesafe_op_ref
     (load['typesafe'] || {})['op_ref']
   end
+
+  # /chef order の商品選びの設定（selection_rules は優先順の文章リスト）
+  def order_settings
+    order = load['order'] || {}
+    {
+      'minimum_order_yen' => order['minimum_order_yen'],
+      'selection_rules' => Array(order['selection_rules'])
+    }
+  end
 end
 
 if __FILE__ == $PROGRAM_NAME
@@ -62,8 +71,15 @@ if __FILE__ == $PROGRAM_NAME
       warn 'life_netsuper.op_item 未設定（config/chef.local.yml）'
       exit 1
     end
+  when 'order'
+    settings = ChefConfig.order_settings
+    if settings['selection_rules'].empty?
+      warn 'order.selection_rules 未設定（config/chef.local.yml。.example 参照）'
+      exit 1
+    end
+    puts JSON.pretty_generate(settings)
   else
-    warn 'usage: config.rb {show|calendar-id|life-op-item}'
+    warn 'usage: config.rb {show|calendar-id|life-op-item|order}'
     exit 1
   end
 end

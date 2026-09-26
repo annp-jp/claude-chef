@@ -57,6 +57,14 @@ class LifeNetsuperTest < Minitest::Test
     assert_equal 'increment_amount', req['source']
   end
 
+  def test_past_product_ids_from_image_urls
+    raw = 'x' + 'https://stailer.imgix.net/life_only_images/0000005638952_ab.JPG' * 2 +
+          'https://stailer.imgix.net/life_only_images/00201268900000.jpg' +
+          'https://stailer.imgix.net/life_only_images/0000006906564_cd.jpg'
+
+    assert_equal({ '0000005638952' => 2, '0000006906564' => 1 }, LifeNetsuper.past_product_ids(raw))
+  end
+
   def test_grpc_status_from_trailer
     assert_equal 0, LifeNetsuper.grpc_status(fixture('add_to_cart_response.bin'))
     assert_nil LifeNetsuper.grpc_status(fixture('product_detail.bin').byteslice(0, 5 + 1))
