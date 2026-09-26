@@ -31,6 +31,11 @@ module ChefConfig
   def life_op_item
     (load['life_netsuper'] || {})['op_item']
   end
+
+  # TypeSafe（Jev）の API キーの 1Password 参照（op://vault/item/field）。未設定なら nil。
+  def typesafe_op_ref
+    (load['typesafe'] || {})['op_ref']
+  end
 end
 
 if __FILE__ == $PROGRAM_NAME

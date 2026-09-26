@@ -12,3 +12,8 @@ calendar_id: "your-id@gmail.com"
 #   その item に username / password フィールドがある前提。
 life_netsuper:
   op_item: "op://<vault>/<item-id>"
+
+# TypeSafe（Jev）の API キーの参照（1Password）。/chef order の商品選びの判定に使う。
+# 環境変数 TYPESAFE_API_KEY があればそちらを優先する。
+typesafe:
+  op_ref: "op://<vault>/<item-id>/credential"
