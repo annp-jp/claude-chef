@@ -130,6 +130,12 @@ module LifeNetsuper
     }
   end
 
+  # 注文履歴（ListPastOrderHistories）には商品名がなく、商品画像 URL にだけ商品 ID が入る。
+  # 画像名が商品 ID でない商品は拾えない（取りこぼしはある）。{ 商品ID => 登場回数 }
+  def past_product_ids(raw)
+    raw.b.scan(%r{life_only_images/(\d{13})_}n).flatten.tally
+  end
+
   # AddToCart のリクエスト。new_item は検索結果などからの初回追加、false はカート内の「＋」
   def decode_add_request(raw)
     f = parse_message(message_body(raw))
@@ -148,6 +154,7 @@ def usage!
       life_netsuper.rb products FILE...   # 検索/商品詳細レスポンスを商品一覧 JSON に（複数ページは結合）
       life_netsuper.rb add-request FILE   # AddToCart リクエストの中身を JSON に
       life_netsuper.rb status FILE        # レスポンスの grpc-status（0 が成功）
+      life_netsuper.rb past-products FILE # 注文履歴レスポンスから過去に買った商品 ID と回数
   USAGE
   exit 1
 end
@@ -163,6 +170,7 @@ if $PROGRAM_NAME == __FILE__
       products = [path, *more].flat_map { |p| LifeNetsuper.decode_products(File.binread(p)) }
       { 'products' => products.uniq { |p| p['product_id'] } }
     when 'add-request' then LifeNetsuper.decode_add_request(raw)
+    when 'past-products' then { 'past_product_counts' => LifeNetsuper.past_product_ids(raw) }
     when 'status' then { 'grpc_status' => LifeNetsuper.grpc_status(raw) }
     else usage!
     end
