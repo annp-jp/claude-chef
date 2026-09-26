@@ -5,11 +5,12 @@
 require 'json'
 require 'optparse'
 require_relative 'chef_db'
+require_relative 'config'
 
 CATEGORY_ORDER = %w[肉魚 野菜 調味料 その他].freeze
 DEFAULT_CATEGORY = 'その他'
-# カート自動投入の対象外にするカテゴリ（家に常備しがち。在庫確認に回す）。
-PANTRY_CATEGORIES = %w[調味料].freeze
+# 買う対象にならないもの（完全一致）。常備品の好みは config の order.pantry_* で持つ。
+NEVER_BUY = %w[水 お湯 湯 氷].freeze
 
 HEURISTICS = [
   ['肉魚', /肉|鶏|豚|牛|挽肉|鮭|鯖|鱈|まぐろ|鰤|海老|エビ|イカ|タコ|あさり|貝|魚/],
@@ -54,6 +55,22 @@ def aggregate(recipes)
   out
 end
 
+# aggregate の結果に好みを反映する。NEVER_BUY は除外し、常備品には pantry: true、
+# item_notes（品目名の部分一致）に当たる品目には note を付ける。
+def apply_preferences(cats, pantry_categories:, pantry_items:, item_notes:)
+  cats.to_h do |cat, items|
+    kept = items.reject { |it| NEVER_BUY.include?(it['name']) }.map do |it|
+      it = it.dup
+      pantry = pantry_categories.include?(cat) || pantry_items.any? { |p| it['name'].include?(p) }
+      it['pantry'] = pantry
+      note = item_notes.find { |key, _| it['name'].include?(key) }&.last
+      it['note'] = note if note
+      it
+    end
+    [cat, kept]
+  end.reject { |_, items| items.empty? }
+end
+
 def cmd_build(args)
   ChefDB.init!
   ChefDB.open do |db|
@@ -88,9 +105,14 @@ def cmd_build(args)
         next
       end
     end
-    cats = aggregate(recipes)
-    pantry = PANTRY_CATEGORIES.select { |c| cats.key?(c) }
-    puts JSON.pretty_generate({ week_start: ws, categories: cats, pantry_categories: pantry })
+    settings = ChefConfig.order_settings
+    cats = apply_preferences(
+      aggregate(recipes),
+      pantry_categories: settings['pantry_categories'],
+      pantry_items: settings['pantry_items'],
+      item_notes: settings['item_notes']
+    )
+    puts JSON.pretty_generate({ week_start: ws, categories: cats })
   end
 end
 

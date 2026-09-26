@@ -37,12 +37,18 @@ module ChefConfig
     (load['typesafe'] || {})['op_ref']
   end
 
-  # /chef order の商品選びの設定（selection_rules は優先順の文章リスト）
+  DEFAULT_PANTRY_CATEGORIES = %w[調味料].freeze
+
+  # /chef order の設定。selection_rules は優先順の文章リスト。
+  # pantry_* は買わずに在庫確認へ回すもの（pantry_items は品目名の部分一致）。item_notes は品目ごとの指定。
   def order_settings
     order = load['order'] || {}
     {
       'minimum_order_yen' => order['minimum_order_yen'],
-      'selection_rules' => Array(order['selection_rules'])
+      'selection_rules' => Array(order['selection_rules']),
+      'pantry_categories' => order.key?('pantry_categories') ? Array(order['pantry_categories']) : DEFAULT_PANTRY_CATEGORIES,
+      'pantry_items' => Array(order['pantry_items']),
+      'item_notes' => order['item_notes'] || {}
     }
   end
 end

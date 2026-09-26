@@ -26,7 +26,9 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 
 1. `ruby scripts/shopping.rb build` を実行
    - 引数なしで「直近の applied 献立」を自動選択。特定週は `--week-start YYYY-MM-DD`
-2. 返ってきた JSON（`categories` がカテゴリ別集計、`pantry_categories` が在庫確認に回すカテゴリ）をユーザー向けに整形して表示
+2. 返ってきた JSON（`categories` がカテゴリ別集計）をユーザー向けに整形して表示
+   - 各品目の `pantry: true` は常備品（`config/chef.local.yml` の `order.pantry_categories` / `pantry_items`）。買わずに「※在庫確認」に回す
+   - `note` があれば品目の横に添える（例: たけのこ → 水煮）
 
 ### 出力フォーマット
 
@@ -40,17 +42,18 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 【野菜】
 - ほうれん草  1束
 
-【調味料】※在庫確認
-- 味噌
-
 【その他】
 - 豆腐 1丁
+
+※在庫確認（常備品なので買わないよ）
+- 味噌 / しょうゆ / だし
 ```
 
 注意:
 - 同じ食材が複数レシピで使われる場合、`shopping.rb` 側で `+` 合算済（例: `200g + 200g`）。完全な数値合算はしない
 - 「確定済み献立がない」エラーが返ってきたら `/chef plan apply` を案内
-- `pantry_categories`（既定では `調味料`）は「※在庫確認」をつけて表示する
+- 「水」「お湯」など買う対象にならないものは `shopping.rb` 側で除外済み
+- 今回だけ家にある、などで外したい品目はユーザーに言ってもらい、その回だけ除く（毎回なら `pantry_items` への追加を提案する）
 
 ---
 
@@ -70,21 +73,22 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 画面は canvas 描画で、DOM も semantics ツリーも画面とずれる（`docs/spec/order/v0.3.md`）。
 代わりに、画面が裏で呼んでいる Stailer の API（`rpc.stailer.jp`）の**応答を読む**（`docs/spec/order/v0.4.md`）。
 
-- **読む**: 検索結果・在庫・価格は `browser_network_request` で応答を保存し、`ruby scripts/life_netsuper.rb products` で JSON にする。スクショの目視で在庫を判断しない
-- **押す**: `browser_run_code_unsafe` の `page.mouse.click(x, y)` で実座標クリック。semantics 要素への `click()` は canvas とずれるので使わない
-- **確かめる**: カート追加は、実際に送られた `AddToCart` のリクエストの商品 ID と `grpc-status` で成否を判定する（`scripts/playwright/add_to_cart.js`）
+- **読む**: 検索結果・在庫・価格は `scripts/playwright/search.js` が検索 API の応答をその場で解読して返す。スクショの目視で在庫を判断しない
+  - 前のページの応答は次のページへ移ると取れなくなるので、`browser_network_request` で後から保存する方式は使わない
+- **押す・確かめる**: カート追加は `scripts/playwright/add_items.js`。実座標でクリックし、実際に送られた `AddToCart` の商品 ID と `grpc-status` で成否を判定する
+- `browser_run_code_unsafe` の filename 実行には引数を渡せないので、`ruby scripts/playwright/render.rb <search|add_items> '<JSON配列>'` で引数を埋め込んだ実行用ファイルを `.playwright-mcp/` に書き出してから実行する
+- 実行環境には `URL` / `TextDecoder` / `Buffer` / `require` が無い
 - 認証トークンには触らない。リクエストはすべてブラウザ自身に送らせる
-- ビューポートは縦長にしておく: `page.setViewportSize({ width: 1024, height: 1400 })`
-- 保存したファイルは `.playwright-mcp/`（git 管理外）に置く
+- ビューポートは `add_items.js` が実行中だけ縦長にし、終わったらウィンドウの大きさに戻す（戻さないとユーザーがページをスクロールできなくなる）
 
 ### 手順
 
 #### 0. 発注リストと設定の取得
 
 1. `ruby scripts/shopping.rb build` を実行し JSON を取得
-2. `categories` のうち `pantry_categories`（既定 `調味料`）を**除いた**カテゴリの商品が**カート投入対象**
-3. `pantry_categories` の商品は投入せず、最後の「在庫確認リスト」に回す
-4. 各商品の `amount`（必要量）と `dishes`（使用料理名）は判定の材料にする
+2. `pantry: false` の品目が**カート投入対象**。`pantry: true`（常備品）は投入せず、最後の「在庫確認リスト」に回す
+3. 投入対象を一覧で見せ、「今回買わなくていいものある？」と聞いてその回だけ除く（毎回同じなら `pantry_items` への追加を提案）
+4. 各商品の `amount`（必要量）・`dishes`（使用料理名）・`note`（品目ごとの指定）は検索と判定の材料にする
 5. `ruby scripts/config.rb order` で選定ルール（`selection_rules`）と最低注文金額（`minimum_order_yen`）を取得。
    未設定エラーなら「`config/chef.local.yml` に `order.selection_rules` を設定してね（`.example` 参照）」と案内して終了
 6. 投入対象が空、または「確定済み献立がない」なら、その旨を伝えて終了（`/chef plan apply` を案内）
@@ -131,42 +135,33 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 
 #### 5. 検索（全品の候補を先に集める）
 
-カート投入対象の各項目について、検索語を決めて（材料名。規格・ブランドの指定があれば含める）:
+カート投入対象の全項目について検索語を決め（材料名。規格・ブランドや `note` の指定があれば含める。例: たけのこ → `たけのこ 水煮`）、**1回でまとめて**検索する:
 
-1. `browser_run_code_unsafe` で検索ページを開き、検索 API の応答を待つ:
-   ```js
-   async (page) => {
-     const isSearch = (r) => r.url().endsWith('/stailer.ShopService/SearchEcProductsWithKeyword');
-     await Promise.all([
-       page.waitForResponse(isSearch, { timeout: 20000 }),
-       page.goto('https://www.life-netsuper.jp/product_search_results?keyword=' + encodeURIComponent('<検索語>')),
-     ]);
-     await page.waitForTimeout(3000); // スクロールで次ページが追加で呼ばれる
-   }
-   ```
-2. `browser_network_requests`（filter: `SearchEcProductsWithKeyword`）で、**前回の検索より後の番号**を全部 `response-body` で保存
-3. `ruby scripts/life_netsuper.rb products <file>...` で候補一覧 JSON にする（`out_of_stock: true` は除外）
-4. 在庫ありの候補が 0 件、または明らかに関係ない商品しかなければ、言い換えを1回だけ試す。それでもなければ「見つからなかった」に回して次へ
+1. `ruby scripts/playwright/render.rb search '["ぶり","豚こま","牛乳"]'`
+2. `browser_run_code_unsafe`（filename: `.playwright-mcp/search.js`）
+   → `{ 検索語: [ { id, name, size, tax(税込), est_tax(グラム売りの目安・税込), per100g }, ... ] }`（在庫ありのみ）
+3. 在庫ありの候補が 0 件、または明らかに関係ない商品しかない語は、言い換えて**1回だけ**同じ手順で再検索する。それでもなければ「見つからなかった」に回す
 
 #### 6. 判定（全品まとめて）
 
 集めた候補を見て、**`selection_rules` に上から従って**各項目の商品と個数を決める。
 
-- 必要量に満たないときは、同じ商品を複数個、または別の商品と組み合わせる（例: 400g → 290g + 110g）
-- 「いつもの」を選んだとき、もっと安い適切な候補があれば完了報告用にメモする
+- 個数は複数でもよく、別の商品と組み合わせてもよい。量の満たし方や組み合わせの可否も `selection_rules` に従う
+- ルールどうしがぶつかって決められないときは、その項目を「確認待ち」にして完了報告で聞く
+- ルールが報告を求めているもの（例: いつものより安い候補）は完了報告用にメモする
 - ついで買いの数量指定はそのまま個数にする
 - 選んだ理由を1行でメモしておく（完了報告で使う）
 
 #### 7. カート投入
 
-選んだ商品ごとに、個数分だけ繰り返す:
+選んだ全商品を**1回でまとめて**入れる:
 
-1. `browser_navigate` で `https://www.life-netsuper.jp/product_detail/<商品ID>`
-2. `browser_run_code_unsafe`（filename: `scripts/playwright/add_to_cart.js`）
-3. 返り値の `ok` が `true` なら成功。`false` なら `error` を見て1回だけやり直し、だめなら「入れられなかった」に回す
-   （`sent_product_id_matches: false` は別の商品が入った可能性があるので、カートを確認して報告する）
-
-全部終わったら https://www.life-netsuper.jp/cart を開き、スクショで一覧と「商品合計」を確認する。
+1. `ruby scripts/playwright/render.rb add_items '[["<商品ID>",<個数>],...]'`
+2. `browser_run_code_unsafe`（filename: `.playwright-mcp/add_items.js`）
+   → `[ { product_id, qty, added, ok, error? }, ... ]`。失敗は中で1回だけやり直し済み
+3. `ok: false` は「入れられなかった」に回す。`error` が「別の商品が送られた可能性」のときはカートを確認して報告する
+4. https://www.life-netsuper.jp/cart を開き、スクショで「商品点数」と「商品合計」を確認する
+   （商品一覧は画面内で別にスクロールする。点数が合っていれば一覧の目視は不要）
 
 #### 8. 完了報告（出力のみ。DB には保存しない）
 
@@ -197,7 +192,7 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 
 - 追加できたもの → 項目名 → 実際に入れた商品名（組み合わせ・いつもの などの理由を括弧で）
 - 最低注文金額（`minimum_order_yen`）に届いていなければ、あと何円かを必ず書く
-- 在庫確認 → `pantry_categories` の項目
+- 在庫確認 → `pantry: true` の項目
 
 ### 注意
 
