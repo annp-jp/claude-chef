@@ -187,3 +187,5 @@ semantics は canvas(実画面)と desync し、**在庫ありの生鮮が seman
 - カートの数量調整はしない（全部 1 個）
 - **在庫判定はスクショ（vision）で**。semantics ツリーは canvas と desync するので結論に使わない
 - ブラウザ操作中にサイト構造で詰まったら、無理に進めず状況をユーザーに伝えて判断を仰ぐ
+- 画面を見ずに通信から検索結果・在庫・カート追加の成否を得る部品がある（`scripts/life_netsuper.rb` / `scripts/playwright/*.js`、手順は `docs/spec/order/v0.4.md`）。
+  スクショで迷うとき（在庫の有無、どの商品が入ったか）はこちらで確かめてよい
