@@ -79,7 +79,7 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 - `browser_run_code_unsafe` の filename 実行には引数を渡せないので、`ruby scripts/playwright/render.rb <search|add_items> '<JSON配列>'` で引数を埋め込んだ実行用ファイルを `.playwright-mcp/` に書き出してから実行する
 - 実行環境には `URL` / `TextDecoder` / `Buffer` / `require` が無い
 - 認証トークンには触らない。リクエストはすべてブラウザ自身に送らせる
-- ビューポートは `add_items.js` が実行中だけ縦長にし、終わったらウィンドウの大きさに戻す（戻さないとユーザーがページをスクロールできなくなる）
+- ビューポートは `add_items.js` が実行中だけ縦長にし、終わったら固定を解いてウィンドウの大きさに追従させる（`page.setViewportSize` は使わない。固定が残り、ユーザーがウィンドウを変えても表示が追従しなくなる）
 
 ### 手順
 
