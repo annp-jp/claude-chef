@@ -1,11 +1,13 @@
 // render.rb add_items で [[商品ID, 個数], ...] を埋め込んでから browser_run_code_unsafe の filename で実行する。
 // 商品ページの「カートへ追加」を実座標で押し、実際に送られた AddToCart の商品 ID と grpc-status で成否を判定する。
-// 実行中はボタンが画面外にならないよう縦長にし、終わったらウィンドウの大きさに戻す（戻さないとページがスクロールできなくなる）。
+// 実行中はボタンが画面外にならないよう縦長にし、終わったら固定を解いてウィンドウの大きさに追従させる。
+// setViewportSize を使うと（数値で戻しても）固定が残り、ユーザーがウィンドウを変えても表示が追従しない。
 async (page) => {
   const items = /*ARGS*/null;
   const bytes = (buf) => Array.from(new Uint8Array(buf || [])).map((c) => String.fromCharCode(c)).join('');
-  const original = await page.evaluate(() => ({ w: window.outerWidth, h: window.outerHeight }));
-  await page.setViewportSize({ width: 1024, height: 1400 });
+  // page.setViewportSize は Playwright 内部のセッションに固定が残り外から解除できないので、自前の CDP セッションで縦長にして同じセッションで解除する
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1024, height: 1400, deviceScaleFactor: 0, mobile: false });
 
   const addOnce = async (productId) => {
     await page.goto('https://www.life-netsuper.jp/product_detail/' + productId);
@@ -15,8 +17,8 @@ async (page) => {
     try { await button.waitFor({ timeout: 10000 }); } catch { return 'カートへ追加ボタンが無い（在庫なし・販売終了の可能性）'; }
     await page.waitForTimeout(500); // semantics の位置が canvas に追いつくのを待つ
     const box = await button.boundingBox();
-    const vp = page.viewportSize();
-    if (!box || box.y < 0 || box.y + box.height > vp.height) return 'ボタンが画面外 y=' + box?.y;
+    const vpHeight = await page.evaluate(() => window.innerHeight); // CDP で縦長にしているので page.viewportSize() では取れない
+    if (!box || box.y < 0 || box.y + box.height > vpHeight) return 'ボタンが画面外 y=' + box?.y;
     try {
       const [request] = await Promise.all([
         page.waitForRequest((r) => r.url().endsWith('/stailer.ShopService/AddToCart'), { timeout: 10000 }),
@@ -48,7 +50,8 @@ async (page) => {
       results.push({ product_id: productId, qty, added, ok: added === qty, error: error || undefined });
     }
   } finally {
-    await page.setViewportSize({ width: original.w, height: Math.max(600, original.h - 90) });
+    await cdp.send('Emulation.clearDeviceMetricsOverride');
+    await cdp.detach();
   }
   return results;
 }
