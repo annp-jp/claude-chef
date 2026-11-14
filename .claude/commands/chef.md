@@ -1,6 +1,6 @@
 ---
 description: 我が家のシェフ。レシピ管理・献立提案・買い物リスト生成。
-argument-hint: <onboard|brief|study|menu|log|plan|order> [args...]
+argument-hint: [onboard|brief|study|menu|log|plan|order] [args...]（引数なしで配送枠の確保）
 ---
 
 # /chef — 我が家のシェフ
@@ -9,10 +9,11 @@ argument-hint: <onboard|brief|study|menu|log|plan|order> [args...]
 
 ## サブコマンドのルーティング
 
-引数 `$ARGUMENTS` の最初のトークンで分岐する。該当する skill を呼び出して処理を委ねる。
+引数 `$ARGUMENTS` の最初のトークンで分岐する。引数なしなら配送枠の確保。該当する skill を呼び出して処理を委ねる。
 
 | サブコマンド | 担当 skill / 処理 |
 |---|---|
+| （引数なし） | skill: `order`（配送枠の確保） |
 | `onboard` | このコマンド内で完結（下記） |
 | `brief` | このコマンド内で完結（下記） |
 | `study [URL]` | skill: `recipe-library` |
@@ -26,7 +27,18 @@ argument-hint: <onboard|brief|study|menu|log|plan|order> [args...]
 
 世界観: 「我が家のシェフ」というキャラクター。応答はフレンドリーで、コマンド名は世界観に揃える（init ではなく onboard、config ではなく brief）。
 
+## いつもの流れ
+
+1. `/chef` — 配送枠を確保
+2. `/chef plan` — 献立を作る
+3. `/chef plan apply` — 献立を確定
+4. `/chef order` — カートに入れる（先にリストだけ見たいときは `/chef order list`）
+
 ## サブコマンド処理
+
+### （引数なし）
+
+`order` skill の「`/chef`（引数なし）: 配送枠の確保」を呼び出す。ログインして枠を選んでもらい、確保したら `/chef plan` へ案内する。
 
 ### `onboard`
 
@@ -76,7 +88,7 @@ Googleカレンダーとの OAuth 連携を行う。
 
 `order` skill を呼び出す。
 
-- `order`（引数なし）: ライフネットスーパーのカートに発注（Playwright MCP でブラウザ操作）。配送枠確保・カート投入を伴うので、実行前に何をするか伝える
+- `order`（引数なし）: ライフネットスーパーのカートに発注（Playwright MCP でブラウザ操作）。配送枠がまだ確保されているか確認し（外れていれば取り直す）、発注リスト作成・カート投入に進む。実行前に何をするか伝える
 - `order list`: 仕入れリスト（発注書）を表示
 - `order settlement`: 未実装。「決済はまだ手動でお願い」と返す
 - 旧 `buy` が来たら `order list` と同等に扱う（後方互換）

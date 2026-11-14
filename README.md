@@ -38,6 +38,7 @@ Claude Code をこのディレクトリで起動すると、`.claude/commands/ch
 
 | コマンド | 説明 |
 |---|---|
+| `/chef` | ライフネットスーパーの配送枠を確保（献立づくりの前に） |
 | `/chef onboard` | DB 初期化 |
 | `/chef brief` | 家族・アレルギー・曜日ルールの閲覧／編集 |
 | `/chef study [URL]` | レシピを登録（URL から抽出 or 対話） |
@@ -48,7 +49,9 @@ Claude Code をこのディレクトリで起動すると、`.claude/commands/ch
 | `/chef order list` | 直近の確定献立から仕入れリスト生成（旧 `/chef buy`） |
 | `/chef order` | ライフネットスーパーのカートに自動発注（Playwright MCP） |
 
-`/chef order` は決済しない（カート投入＋配送枠確保まで）。`/chef order settlement`（決済）は未実装。
+`/chef order` は決済しない（枠の確認＋カート投入まで。枠が外れていたら取り直す）。`/chef order settlement`（決済）は未実装。
+
+いつもの流れ: `/chef`（枠確保）→ `/chef plan` → `/chef plan apply` → `/chef order`。
 
 ### ローカル設定
 
