@@ -83,8 +83,10 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 
 ### 手順
 
-#### 0. 認証情報の取得（配送枠を先に押さえるため、最初にやる）
+#### 0. 設定と認証情報の取得（配送枠を先に押さえるため、最初にやる）
 
+- `ruby scripts/config.rb order` で選定ルール（`selection_rules`）と最低注文金額（`minimum_order_yen`）を取得。
+  未設定エラーなら「`config/chef.local.yml` に `order.selection_rules` を設定してね（`.example` 参照）」と案内して終了（枠を押さえる前に止める）
 - `ruby scripts/config.rb life-op-item` で 1Password 参照（`op://...`）を取得
 - `op read "<op_item>/username"` と `op read "<op_item>/password"` で実値を取得
 - 未設定エラーなら「`config/chef.local.yml` に `life_netsuper.op_item` を設定してね（`.example` 参照）」と案内して終了
@@ -109,15 +111,13 @@ applied 済み献立の材料を、ネットスーパー「ライフ」のカー
 4. 確保した枠をすぐ伝える（例: 「9/27(日) 11:00〜14:00 押さえたよ！」）。**確保は1時間だけ**なので、このあとの確認（買わなくていいもの・ついで買い）は手短にまとめ、終わったら止まらずに進める
    - 既に枠が確保済みなら、現在の枠を伝えて「このままでいい？」と確認
 
-#### 3. 発注リストと設定の取得
+#### 3. 発注リストの取得
 
 1. `ruby scripts/shopping.rb build` を実行し JSON を取得
 2. `pantry: false` の品目が**カート投入対象**。`pantry: true`（常備品）は投入せず、最後の「在庫確認リスト」に回す
 3. 投入対象を一覧で見せ、「今回買わなくていいものある？」と聞いてその回だけ除く（毎回同じなら `pantry_items` への追加を提案）
 4. 各商品の `amount`（必要量）・`dishes`（使用料理名）・`note`（品目ごとの指定）は検索と判定の材料にする
-5. `ruby scripts/config.rb order` で選定ルール（`selection_rules`）と最低注文金額（`minimum_order_yen`）を取得。
-   未設定エラーなら「`config/chef.local.yml` に `order.selection_rules` を設定してね（`.example` 参照）」と案内して終了
-6. 投入対象が空、または「確定済み献立がない」なら、その旨を伝える（`/chef plan apply` を案内）。配送枠はもう確保してあるので、ついで買いだけ入れるか、ここで終えるかを聞く（終える場合、枠は1時間で自動的に外れる）
+5. 投入対象が空、または「確定済み献立がない」なら、その旨を伝える（`/chef plan apply` を案内）。配送枠はもう確保してあるので、ついで買いだけ入れるか、ここで終えるかを聞く（確保は1時間だけなので、終える場合はそのまま置いておけばよい）
 
 #### 3.5 ついで買いの確認（献立外の追加品）
 
