@@ -82,7 +82,7 @@ Googleカレンダーとの OAuth 連携を行う。
 
 ### `plan` / `plan apply`
 
-`meal-planning` skill を呼び出す。`apply` は副作用（Googleカレンダー登録・meal_log 自動記録）を伴うので、実行前に必ず最終確認する。
+`meal-planning` skill を呼び出す。`apply` は副作用（Googleカレンダー登録・meal_log 自動記録）を伴うが、`/chef plan apply` を打った時点でその OK をもらっているので、聞き直さずに最後まで進める。
 
 ### `order` / `order list`
 
