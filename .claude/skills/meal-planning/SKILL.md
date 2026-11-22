@@ -77,13 +77,16 @@ draft を保存しておけば、後で `apply --week-start <YYYY-MM-DD>` で `-
 
 1. 確定する献立（week_start と日別献立）を、何を登録するか分かるように一覧で示す（確認待ちはしない）
    - 既に draft 保存済みでそれを確定する副経路なら、先に `ruby scripts/meal_plan.rb show` で対象を表示する
-   - 止まってユーザーに聞くのは次の場合だけ: 確定する献立が会話から一意に決まらない（`/chef plan` での提案がなく draft もない、など）／対象週や登録先カレンダーがはっきりしない
+   - 止まってユーザーに聞くのは次の場合だけ:
+     - 確定する献立が会話から一意に決まらない（`/chef plan` での提案がなく draft もない、など）、または対象週がはっきりしない
+     - `apply` と一緒に献立の修正が来た（例: 「`/chef plan apply` 火曜は替えて」）→ 直した献立を見せて止まる。直した後の献立は、まだ OK をもらっていないため
+     - 対象週がすでに applied（`ruby scripts/meal_plan.rb show --week-start <YYYY-MM-DD>` で確認）→ カレンダーに前回の予定が残っていて二重登録になるので、前回の予定を消してから登録し直すか聞く
 2. 続けて以下を順に実行:
-   - **Googleカレンダー登録**: `mcp__claude_ai_Google_Calendar__*` 系ツールが利用可能なら、各日付の献立を「終日予定（all-day event）」として登録する。`allDay: true` にし、開始・終了は **UTC の0時**（例: 9/28 の予定なら `startTime: 2026-09-28T00:00:00Z` / `endTime: 2026-09-29T00:00:00Z`）で渡すこと。日本時間の0時（`+09:00`）で渡すと UTC に直されて**前日にずれる**。登録後、返ってきた `start.date` が狙った日付かを確認する。登録先カレンダーは `config/chef.local.yml` の `calendar_id`（`ruby scripts/config.rb calendar-id` で取得。未設定なら `primary` を使うかユーザーに確認）。イベント名はその日の料理名（複数なら「主菜 + 副菜 + 汁物」のように連結）。MCPが未認証ならその旨を伝え、認証後に再実行するよう案内
+   - **Googleカレンダー登録**: Google Calendar のイベント作成ツール（`create_event` など。MCP サーバー名は環境によって変わるので、ツール名ではなく機能で探す）が使えるなら、各日付の献立を「終日予定（all-day event）」として登録する。`allDay: true` にし、開始・終了は **UTC の0時**（例: 9/28 の予定なら `startTime: 2026-09-28T00:00:00Z` / `endTime: 2026-09-29T00:00:00Z`）で渡すこと。日本時間の0時（`+09:00`）で渡すと UTC に直されて**前日にずれる**。登録後、返ってきた `start.date` が狙った日付かを確認する。登録先カレンダーは `config/chef.local.yml` の `calendar_id`（`ruby scripts/config.rb calendar-id` で取得。未設定なら止まって、`primary` でいいかユーザーに聞く）。イベント名はその日の料理名（複数なら「主菜 + 副菜 + 汁物」のように連結）。MCPが未認証ならその旨を伝え、認証後に再実行するよう案内
    - **DB確定**:
      - 主経路（直接確定）: `ruby scripts/meal_plan.rb apply --json '<JSON>'`
        - meal_plans 行が無ければ作成し、applied に昇格 + 各日を meal_log に記録する
      - 副経路（draft 確定）: `ruby scripts/meal_plan.rb apply --week-start <YYYY-MM-DD>`
-4. 結果をユーザーに報告（カレンダー登録件数、meal_log 記録件数）
+3. 結果をユーザーに報告（カレンダー登録件数、meal_log 記録件数）
 
 カレンダー登録に失敗した場合は DB apply を実行する前に止めて、ユーザーに状況を伝える。
